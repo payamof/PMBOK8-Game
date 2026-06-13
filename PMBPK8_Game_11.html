@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PMBPK8 Game — Payam Nejatkhah</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --gold: #C9962A;
+    --gold-light: #F5E6C2;
+    --bg: #F4F6FB;
+    --white: #FFFFFF;
+    --border: #D8DEF0;
+    --text: #1A1F2E;
+    --muted: #6B7490;
+    --green: #1A7A4A;
+    --green-bg: #D4F0E2;
+    --red: #B82020;
+    --red-bg: #FAE0E0;
+    --shadow: 0 2px 12px rgba(27,42,74,0.10);
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* WELCOME SCREEN */
+  #welcome {
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: linear-gradient(145deg, #0F1D36 0%, #1B2A4A 60%, #243460 100%);
+    padding: 2rem;
+  }
+  .welcome-card {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(201,150,42,0.3);
+    border-radius: 20px; padding: 3rem 3.5rem; max-width: 640px; width: 100%; text-align: center;
+    backdrop-filter: blur(8px);
+  }
+  .game-badge {
+    display: inline-block; background: var(--gold); color: #1B2A4A;
+    font-weight: 800; font-size: 11px; letter-spacing: 2px;
+    padding: 4px 14px; border-radius: 20px; margin-bottom: 1.2rem; text-transform: uppercase;
+  }
+  .welcome-title { font-size: 3rem; font-weight: 800; color: #fff; line-height: 1.1; margin-bottom: 0.5rem; }
+  .welcome-title span { color: var(--gold); }
+  .welcome-sub { font-size: 1rem; color: rgba(255,255,255,0.6); margin-bottom: 2rem; }
+  .welcome-author { font-size: 0.9rem; color: rgba(255,255,255,0.45); margin-bottom: 0.3rem; }
+  .welcome-site { font-size: 0.85rem; color: var(--gold); opacity: 0.8; margin-bottom: 2.5rem; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2.5rem; text-align: left; }
+  .info-item { background: rgba(255,255,255,0.06); border-radius: 10px; padding: 1rem; }
+  .info-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--gold); margin-bottom: 4px; }
+  .info-val { font-size: 0.85rem; color: rgba(255,255,255,0.75); line-height: 1.5; }
+  .btn-start {
+    background: var(--gold); color: #1B2A4A; border: none; border-radius: 12px;
+    padding: 1rem 3rem; font-size: 1.1rem; font-weight: 700; cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s; letter-spacing: 0.5px;
+    box-shadow: 0 4px 20px rgba(201,150,42,0.4);
+  }
+  .btn-start:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(201,150,42,0.5); }
+  .btn-start:active { transform: translateY(0); }
+
+  /* GAME SCREEN */
+  #game { display: none; flex-direction: column; min-height: 100vh; }
+
+  /* TOP BAR */
+  .topbar {
+    background: var(--navy); color: #fff; padding: 0.75rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 16px rgba(0,0,0,0.25);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 1rem; }
+  .topbar-logo { font-weight: 800; font-size: 1.1rem; color: var(--gold); letter-spacing: 0.5px; }
+  .topbar-sub { font-size: 0.72rem; color: rgba(255,255,255,0.45); }
+  .score-display {
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .score-pill {
+    background: rgba(255,255,255,0.1); border-radius: 20px; padding: 4px 14px;
+    font-size: 0.82rem; color: rgba(255,255,255,0.8);
+  }
+  .score-pill span { color: var(--gold); font-weight: 700; }
+  .topbar-btns { display: flex; gap: 8px; }
+  .btn-check, .btn-reset, .btn-key {
+    border: none; border-radius: 8px; padding: 7px 16px;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-check  { background: #1A7A4A; color: #fff; }
+  .btn-check:hover  { background: #22A060; }
+  .btn-reset  { background: rgba(255,255,255,0.12); color: #fff; }
+  .btn-reset:hover  { background: rgba(255,255,255,0.22); }
+  .btn-key    { background: rgba(201,150,42,0.2); color: var(--gold); border: 1px solid rgba(201,150,42,0.4); }
+  .btn-key:hover    { background: rgba(201,150,42,0.35); }
+
+  /* LAYOUT: bank + board side by side */
+  .game-body { display: flex; flex: 1; gap: 0; overflow: hidden; height: calc(100vh - 56px); }
+
+  /* CARD BANK */
+  .card-bank {
+    width: 240px; min-width: 220px; background: #fff; border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .bank-header {
+    padding: 12px 14px; background: var(--navy); color: #fff;
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  }
+  .bank-count { background: var(--gold); color: #1B2A4A; border-radius: 10px; padding: 1px 8px; font-size: 0.72rem; font-weight: 800; }
+  .bank-scroll { overflow-y: auto; padding: 8px; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .bank-scroll::-webkit-scrollbar { width: 4px; }
+  .bank-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .process-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 8px; font-size: 0.72rem; font-weight: 600; color: var(--text);
+    cursor: grab; transition: box-shadow 0.15s, transform 0.15s, opacity 0.2s;
+    user-select: none; line-height: 1.3;
+  }
+  .process-card:hover { box-shadow: 0 4px 14px rgba(27,42,74,0.18); transform: translateX(3px); }
+  .process-card.dragging { opacity: 0.4; transform: scale(0.96); }
+  .process-card.placed { opacity: 0.35; cursor: default; pointer-events: none; }
+
+  /* Domain colors removed — plain white cards */
+
+  .card-domain-tag { font-size: 0.62rem; font-weight: 400; opacity: 0.6; margin-top: 3px; }
+
+  /* GAME BOARD */
+  .board-wrap { flex: 1; overflow: auto; padding: 10px; }
+  .board-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
+  .board-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  table.board {
+    border-collapse: separate; border-spacing: 3px;
+    min-width: 620px;
+  }
+  table.board tbody tr { height: 80px; }
+  table.board th {
+    font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;
+    padding: 6px 6px; text-align: center; white-space: nowrap;
+  }
+  .th-domain {
+    background: var(--navy); color: #fff; border-radius: 6px;
+    min-width: 90px; padding: 6px 8px;
+  }
+  .th-focus { border-radius: 6px; min-width: 145px; }
+  .th-init { background: #D6EAF8; color: #154360; }
+  .th-plan { background: #D5F5E3; color: #1A4D2E; }
+  .th-exec { background: #FDEBD0; color: #7D4A00; }
+  .th-mc   { background: #F9EBEA; color: #7B241C; }
+  .th-clos { background: #FEF9E7; color: #7D6608; }
+
+  .domain-label {
+    font-size: 0.60rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    color: #fff; border-radius: 4px; padding: 4px 6px; text-align: center;
+    writing-mode: horizontal-tb; transform: none; height: 100%; width: 90px;
+    display: flex; align-items: center; justify-content: center; word-break: break-word;
+  }
+  .dl-gov { background: #C0392B; }
+  .dl-sco { background: #2980B9; }
+  .dl-sch { background: #27AE60; }
+  .dl-fin { background: #D4AC0D; }
+  .dl-sta { background: #8E44AD; }
+  .dl-res { background: #16A085; }
+  .dl-ris { background: #E67E22; }
+
+  /* DROP CELLS */
+  .drop-cell {
+    background: #fff; border: 1.5px dashed var(--border); border-radius: 6px;
+    vertical-align: top; width: 145px; height: 80px; padding: 3px;
+    position: relative; transition: background 0.15s, border-color 0.15s;
+    overflow-y: auto;
+  }
+  table.board tbody tr { height: 80px; }
+  .drop-cell.drag-over { background: #EEF3FF; border-color: #4A7BD8; border-style: solid; }
+  .drop-cell.correct { background: var(--green-bg); border-color: var(--green); border-style: solid; }
+  .drop-cell.wrong   { background: var(--red-bg);   border-color: var(--red);   border-style: solid; }
+
+  .cell-chip {
+    background: #fff; border: 1px solid var(--border); border-radius: 4px;
+    padding: 3px 6px; font-size: 0.68rem; font-weight: 600; color: var(--text);
+    margin: 2px; display: block; cursor: grab; line-height: 1.25;
+    transition: box-shadow 0.12s;
+    max-width: 100%; word-break: break-word;
+  }
+  .cell-chip:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.10); }
+  .cell-chip.dragging { opacity: 0.3; }
+
+  /* RESULT OVERLAY */
+  #result-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(15,29,54,0.85);
+    z-index: 200; align-items: center; justify-content: center;
+  }
+  #result-overlay.show { display: flex; }
+  .result-card {
+    background: #fff; border-radius: 20px; padding: 2.5rem 3rem;
+    max-width: 480px; width: 90%; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  }
+  .result-emoji { font-size: 3.5rem; margin-bottom: 0.8rem; }
+  .result-title { font-size: 1.8rem; font-weight: 800; color: var(--navy); margin-bottom: 0.5rem; }
+  .result-score { font-size: 3rem; font-weight: 800; color: var(--gold); margin: 0.5rem 0 0.3rem; }
+  .result-detail { font-size: 0.9rem; color: var(--muted); margin-bottom: 1.5rem; }
+  .result-btns { display: flex; gap: 10px; justify-content: center; }
+  .btn-overlay { border: none; border-radius: 10px; padding: 10px 24px; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
+  .btn-try { background: var(--navy); color: #fff; }
+  .btn-close-res { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+
+  /* KEY OVERLAY */
+  #key-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(15,29,54,0.85);
+    z-index: 200; align-items: center; justify-content: center; padding: 1rem;
+  }
+  #key-overlay.show { display: flex; }
+  .key-card {
+    background: #fff; border-radius: 16px; padding: 1.5rem;
+    max-width: 700px; width: 100%; max-height: 85vh; overflow-y: auto;
+  }
+  .key-card h2 { font-size: 1.1rem; color: var(--navy); margin-bottom: 1rem; font-weight: 700; }
+  .key-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  .key-table th { background: var(--navy); color: #fff; padding: 7px 10px; text-align: left; }
+  .key-table td { padding: 5px 10px; border-bottom: 1px solid var(--border); }
+  .key-table tr:nth-child(even) td { background: var(--bg); }
+  .btn-close-key { background: var(--navy); color: #fff; border: none; border-radius: 8px; padding: 8px 20px; cursor: pointer; font-size: 0.85rem; font-weight: 600; margin-top: 1rem; }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--navy); color: #fff; border-radius: 10px; padding: 12px 24px;
+    font-size: 0.85rem; font-weight: 600; z-index: 300; opacity: 0;
+    transition: all 0.3s; pointer-events: none; white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- WELCOME -->
+<div id="welcome">
+  <div class="welcome-card">
+    <div class="game-badge">Interactive Learning Game</div>
+    <div class="welcome-title">PMBPK8 <span>Game</span></div>
+    <p class="welcome-sub">Project Management Process Challenge</p>
+    <p class="welcome-author">Designed by Payam Nejatkhah</p>
+    <p class="welcome-site">www.nejatkhah.com</p>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-label">Processes</div>
+        <div class="info-val">40 PMBPK8 processes to place correctly</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">How to play</div>
+        <div class="info-val">Drag cards from the left panel to the correct grid cell</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Rows</div>
+        <div class="info-val">7 Performance Domains</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Columns</div>
+        <div class="info-val">5 Focus Areas</div>
+      </div>
+    </div>
+    <button class="btn-start" onclick="startGame()">Start Game</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="game">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div>
+        <div class="topbar-logo">PMBPK8 Game</div>
+        <div class="topbar-sub">Payam Nejatkhah · www.nejatkhah.com</div>
+      </div>
+    </div>
+    <div class="score-display">
+      <div class="score-pill">Placed: <span id="placed-count">0</span>/40</div>
+    </div>
+    <div class="topbar-btns">
+      <button class="btn-key"   onclick="showKey()">Answer Key</button>
+      <button class="btn-reset" onclick="resetGame()">Reset</button>
+      <button class="btn-check" onclick="checkAnswers()">Check Answers</button>
+    </div>
+  </div>
+
+  <div class="game-body">
+    <!-- CARD BANK -->
+    <div class="card-bank">
+      <div class="bank-header">
+        Process Cards
+        <span class="bank-count" id="bank-count">40</span>
+      </div>
+      <div class="bank-scroll" id="bank-scroll"></div>
+    </div>
+
+    <!-- BOARD -->
+    <div class="board-wrap">
+      <table class="board" id="board-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th class="th-focus th-init">Initiating</th>
+            <th class="th-focus th-plan">Planning</th>
+            <th class="th-focus th-exec">Executing</th>
+            <th class="th-focus th-mc">Monitoring &amp; Controlling</th>
+            <th class="th-focus th-clos">Closing</th>
+          </tr>
+        </thead>
+        <tbody id="board-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT OVERLAY -->
+<div id="result-overlay">
+  <div class="result-card">
+    <div class="result-emoji" id="res-emoji">🏆</div>
+    <div class="result-title" id="res-title">Great Job!</div>
+    <div class="result-score" id="res-score">0%</div>
+    <div class="result-detail" id="res-detail"></div>
+    <div class="result-btns">
+      <button class="btn-overlay btn-try" onclick="resetGame();closeResult()">Try Again</button>
+      <button class="btn-overlay btn-close-res" onclick="closeResult()">Review Board</button>
+    </div>
+  </div>
+</div>
+
+<!-- KEY OVERLAY -->
+<div id="key-overlay">
+  <div class="key-card">
+    <h2>Complete Answer Key</h2>
+    <table class="key-table" id="key-table">
+      <tr><th>#</th><th>Process</th><th>Performance Domain</th><th>Focus Area</th></tr>
+    </table>
+    <div style="text-align:center"><button class="btn-close-key" onclick="closeKey()">Close</button></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const PROCESSES = [
+  {n:"Initiate Project or Phase",            d:"Governance",   f:"Initiating",                c:"gov"},
+  {n:"Integrate and Align Project Plans",    d:"Governance",   f:"Planning",                  c:"gov"},
+  {n:"Plan Sourcing Strategy",               d:"Governance",   f:"Planning",                  c:"gov"},
+  {n:"Manage Project Execution",             d:"Governance",   f:"Executing",                 c:"gov"},
+  {n:"Manage Quality Assurance",             d:"Governance",   f:"Executing",                 c:"gov"},
+  {n:"Manage Project Knowledge",             d:"Governance",   f:"Executing",                 c:"gov"},
+  {n:"Monitor and Control Project Performance",d:"Governance", f:"Monitoring and Controlling",c:"gov"},
+  {n:"Assess and Implement Changes",         d:"Governance",   f:"Monitoring and Controlling",c:"gov"},
+  {n:"Close Project or Phase",               d:"Governance",   f:"Closing",                   c:"gov"},
+  {n:"Plan Scope Management",                d:"Scope",        f:"Planning",                  c:"sco"},
+  {n:"Elicit and Analyze Requirements",      d:"Scope",        f:"Planning",                  c:"sco"},
+  {n:"Define Scope",                         d:"Scope",        f:"Planning",                  c:"sco"},
+  {n:"Develop Scope Structure",              d:"Scope",        f:"Planning",                  c:"sco"},
+  {n:"Monitor and Control Scope",            d:"Scope",        f:"Monitoring and Controlling",c:"sco"},
+  {n:"Validate Scope",                       d:"Scope",        f:"Monitoring and Controlling",c:"sco"},
+  {n:"Plan Schedule Management",             d:"Schedule",     f:"Planning",                  c:"sch"},
+  {n:"Develop Schedule",                     d:"Schedule",     f:"Planning",                  c:"sch"},
+  {n:"Monitor and Control Schedule",         d:"Schedule",     f:"Monitoring and Controlling",c:"sch"},
+  {n:"Plan Financial Management",            d:"Finance",      f:"Planning",                  c:"fin"},
+  {n:"Estimate Costs",                       d:"Finance",      f:"Planning",                  c:"fin"},
+  {n:"Develop Budget",                       d:"Finance",      f:"Planning",                  c:"fin"},
+  {n:"Monitor and Control Finances",         d:"Finance",      f:"Monitoring and Controlling",c:"fin"},
+  {n:"Identify Stakeholders",                d:"Stakeholders", f:"Initiating",                c:"sta"},
+  {n:"Plan Stakeholder Engagement",          d:"Stakeholders", f:"Planning",                  c:"sta"},
+  {n:"Plan Communications Management",       d:"Stakeholders", f:"Planning",                  c:"sta"},
+  {n:"Manage Stakeholder Engagement",        d:"Stakeholders", f:"Executing",                 c:"sta"},
+  {n:"Manage Communications",               d:"Stakeholders", f:"Executing",                 c:"sta"},
+  {n:"Monitor Stakeholder Engagement",       d:"Stakeholders", f:"Monitoring and Controlling",c:"sta"},
+  {n:"Monitor Communications",              d:"Stakeholders", f:"Monitoring and Controlling",c:"sta"},
+  {n:"Plan Resource Management",             d:"Resources",    f:"Planning",                  c:"res"},
+  {n:"Estimate Resources",                   d:"Resources",    f:"Planning",                  c:"res"},
+  {n:"Acquire Resources",                    d:"Resources",    f:"Executing",                 c:"res"},
+  {n:"Lead the Team",                        d:"Resources",    f:"Executing",                 c:"res"},
+  {n:"Monitor and Control Resourcing",       d:"Resources",    f:"Monitoring and Controlling",c:"res"},
+  {n:"Plan Risk Management",                 d:"Risk",         f:"Planning",                  c:"ris"},
+  {n:"Identify Risks",                       d:"Risk",         f:"Planning",                  c:"ris"},
+  {n:"Perform Risk Analysis",                d:"Risk",         f:"Planning",                  c:"ris"},
+  {n:"Plan Risk Responses",                  d:"Risk",         f:"Planning",                  c:"ris"},
+  {n:"Implement Risk Responses",             d:"Risk",         f:"Executing",                 c:"ris"},
+  {n:"Monitor Risks",                        d:"Risk",         f:"Monitoring and Controlling",c:"ris"},
+];
+
+const DOMAINS = ["Governance","Scope","Schedule","Finance","Stakeholders","Resources","Risk"];
+const FOCUSES = ["Initiating","Planning","Executing","Monitoring and Controlling","Closing"];
+const D_CLASS  = {Governance:"gov",Scope:"sco",Schedule:"sch",Finance:"fin",Stakeholders:"sta",Resources:"res",Risk:"ris"};
+const D_LABEL  = {Governance:"dl-gov",Scope:"dl-sco",Schedule:"dl-sch",Finance:"dl-fin",Stakeholders:"dl-sta",Resources:"dl-res",Risk:"dl-ris"};
+
+let dragSrc = null;  // {el, fromBank:bool, fromCell:string|null, processName:string}
+let boardState = {}; // key="domain|focus" => array of process names
+let shuffled = [];
+
+function shuffle(arr){ return arr.slice().sort(()=>Math.random()-0.5); }
+
+function startGame(){
+  document.getElementById('welcome').style.display='none';
+  document.getElementById('game').style.display='flex';
+  initGame();
+}
+
+function initGame(){
+  shuffled = shuffle(PROCESSES);
+  boardState = {};
+  renderBank();
+  renderBoard();
+  updateCounts();
+}
+
+function resetGame(){
+  boardState = {};
+  renderBank();
+  renderBoard();
+  updateCounts();
+  showToast('Board reset! Start again.');
+}
+
+/* ── BANK ────────────────────────────────────────────── */
+function renderBank(){
+  const scroll = document.getElementById('bank-scroll');
+  scroll.innerHTML='';
+  const placedNames = new Set(Object.values(boardState).flat());
+  shuffled.forEach(p => {
+    const div = document.createElement('div');
+    div.className = `process-card d-${p.c}` + (placedNames.has(p.n) ? ' placed' : '');
+    div.draggable = !placedNames.has(p.n);
+    div.dataset.name = p.n;
+    div.innerHTML = p.n;
+    addDragHandlers(div, true, null);
+    scroll.appendChild(div);
+  });
+  document.getElementById('bank-count').textContent =
+    shuffled.length - placedNames.size;
+}
+
+/* ── BOARD ───────────────────────────────────────────── */
+function renderBoard(){
+  const tbody = document.getElementById('board-body');
+  tbody.innerHTML='';
+  DOMAINS.forEach(dom => {
+    const tr = document.createElement('tr');
+    const tdLabel = document.createElement('td');
+    tdLabel.rowSpan = 1;
+    tdLabel.style.padding = '4px';
+    tdLabel.innerHTML = `<div class="domain-label ${D_LABEL[dom]}">${dom}</div>`;
+    tr.appendChild(tdLabel);
+
+    FOCUSES.forEach(foc => {
+      const key = dom+'|'+foc;
+      const td = document.createElement('td');
+      td.className = 'drop-cell';
+      td.dataset.domain = dom;
+      td.dataset.focus  = foc;
+      td.dataset.key    = key;
+
+      (boardState[key]||[]).forEach(name => {
+        const p = PROCESSES.find(x=>x.n===name);
+        const chip = document.createElement('span');
+        chip.className = `cell-chip d-${p.c}`;
+        chip.textContent = name;
+        chip.draggable = true;
+        chip.dataset.name = name;
+        addDragHandlers(chip, false, key);
+        td.appendChild(chip);
+      });
+
+      addDropHandlers(td);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+/* ── DRAG ────────────────────────────────────────────── */
+function addDragHandlers(el, fromBank, fromCellKey){
+  el.addEventListener('dragstart', e => {
+    dragSrc = {el, fromBank, fromCellKey, name: el.dataset.name};
+    el.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', el.dataset.name);
+  });
+  el.addEventListener('dragend', () => el.classList.remove('dragging'));
+}
+
+function addDropHandlers(td){
+  td.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    td.classList.add('drag-over');
+  });
+  td.addEventListener('dragleave', () => td.classList.remove('drag-over'));
+  td.addEventListener('drop', e => {
+    e.preventDefault();
+    td.classList.remove('drag-over');
+    if(!dragSrc) return;
+    const name = dragSrc.name;
+    const dom  = td.dataset.domain;
+    const foc  = td.dataset.focus;
+    const key  = td.dataset.key;
+
+    // remove from source cell if on board
+    if(!dragSrc.fromBank && dragSrc.fromCellKey){
+      boardState[dragSrc.fromCellKey] = (boardState[dragSrc.fromCellKey]||[]).filter(n=>n!==name);
+    }
+    // add to target cell (avoid duplicates)
+    if(!(boardState[key]||[]).includes(name)){
+      boardState[key] = [...(boardState[key]||[]), name];
+    }
+    // clear check colours
+    clearCheck();
+    renderBank();
+    renderBoard();
+    updateCounts();
+    dragSrc = null;
+  });
+}
+
+/* Return chip to bank on drop to bank area */
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('bank-scroll').addEventListener('dragover', e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; });
+  document.getElementById('bank-scroll').addEventListener('drop', e=>{
+    e.preventDefault();
+    if(!dragSrc || dragSrc.fromBank) return;
+    const name = dragSrc.name;
+    if(dragSrc.fromCellKey){
+      boardState[dragSrc.fromCellKey]=(boardState[dragSrc.fromCellKey]||[]).filter(n=>n!==name);
+    }
+    clearCheck();
+    renderBank(); renderBoard(); updateCounts();
+    dragSrc=null;
+  });
+});
+
+/* ── COUNTS ──────────────────────────────────────────── */
+function updateCounts(){
+  const placed = Object.values(boardState).flat().length;
+  document.getElementById('placed-count').textContent = placed;
+  document.getElementById('bank-count').textContent   = 40 - placed;
+}
+
+/* ── CHECK ───────────────────────────────────────────── */
+function checkAnswers(){
+  clearCheck();
+  let correct=0, placed=0;
+  const cells = document.querySelectorAll('.drop-cell');
+  cells.forEach(td => {
+    const dom = td.dataset.domain, foc = td.dataset.focus, key = td.dataset.key;
+    const names = boardState[key]||[];
+    names.forEach(name => {
+      placed++;
+      const p = PROCESSES.find(x=>x.n===name);
+      if(p && p.d===dom && p.f===foc){
+        correct++;
+        td.classList.add('correct');
+      } else {
+        td.classList.add('wrong');
+      }
+    });
+  });
+  const pct = placed>0 ? Math.round(correct/placed*100) : 0;
+  let emoji='📚', title='Keep Practicing!';
+  if(pct===100){ emoji='🏆'; title='Perfect Score!'; }
+  else if(pct>=80){ emoji='🎯'; title='Great Job!'; }
+  else if(pct>=60){ emoji='👍'; title='Good Effort!'; }
+  document.getElementById('res-emoji').textContent = emoji;
+  document.getElementById('res-title').textContent = title;
+  document.getElementById('res-score').textContent = pct+'%';
+  document.getElementById('res-detail').textContent =
+    `${correct} correct out of ${placed} placed processes.  Green = correct  |  Red = wrong`;
+  document.getElementById('result-overlay').classList.add('show');
+}
+
+function clearCheck(){
+  document.querySelectorAll('.drop-cell').forEach(td=>{
+    td.classList.remove('correct','wrong');
+  });
+}
+
+function closeResult(){ document.getElementById('result-overlay').classList.remove('show'); }
+
+/* ── ANSWER KEY ──────────────────────────────────────── */
+function showKey(){
+  const tb = document.getElementById('key-table');
+  tb.innerHTML='<tr><th>#</th><th>Process</th><th>Performance Domain</th><th>Focus Area</th></tr>';
+  PROCESSES.forEach((p,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${i+1}</td><td>${p.n}</td><td>${p.d}</td><td>${p.f}</td>`;
+    tb.appendChild(tr);
+  });
+  document.getElementById('key-overlay').classList.add('show');
+}
+function closeKey(){ document.getElementById('key-overlay').classList.remove('show'); }
+
+/* ── TOAST ───────────────────────────────────────────── */
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+</script>
+</body>
+</html>
